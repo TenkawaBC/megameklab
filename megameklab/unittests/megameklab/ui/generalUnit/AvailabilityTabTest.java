@@ -39,6 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 import megamek.client.ratgenerator.MissionRole;
 import megamek.common.equipment.Engine;
@@ -49,6 +51,7 @@ import megamek.common.units.Entity;
 import megamek.common.units.ForceGeneratorAvailability;
 import megamek.common.units.Mek;
 import megameklab.ui.EntitySource;
+import megameklab.ui.generalUnit.AvailabilityTableModel.AvailabilityRow;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -154,6 +157,43 @@ class AvailabilityTabTest {
         assertTrue(tab.getMismatchedRoles().contains(MissionRole.PARATROOPER),
               "It should be flagged as not applying to this unit type");
         assertFalse(tab.getMismatchedRoles().contains(MissionRole.FIRE_SUPPORT));
+    }
+
+    @Test
+    void aRangeThatEndsInsideAnEraIsFlagged() {
+        // The QA case: eras at 3055, 3060, 3067. A range ending at 3062 stops inside the 3060-3066 era, so the change
+        // is smeared across that era rather than happening at 3063.
+        NavigableSet<Integer> eras = new TreeSet<>(List.of(3050, 3055, 3060, 3067, 3075));
+        List<AvailabilityRow> rows = List.of(
+              new AvailabilityRow("FS", "Federated Suns", 2, 3055, 3062, false));
+
+        List<String> problems = AvailabilityTab.eraAlignmentProblems(rows, 3050, eras);
+
+        assertEquals(1, problems.size());
+        assertTrue(problems.getFirst().contains("3062"), problems.getFirst());
+        assertTrue(problems.getFirst().contains("3060-3066"), problems.getFirst());
+    }
+
+    @Test
+    void aRangeThatLinesUpWithErasIsNotFlagged() {
+        // 3055-3059 is the whole 3055 era (3055 up to the year before 3060), so it is crisp.
+        NavigableSet<Integer> eras = new TreeSet<>(List.of(3050, 3055, 3060, 3067, 3075));
+        List<AvailabilityRow> rows = List.of(
+              new AvailabilityRow("FS", "Federated Suns", 2, 3055, 3059, false));
+
+        assertTrue(AvailabilityTab.eraAlignmentProblems(rows, 3050, eras).isEmpty());
+    }
+
+    @Test
+    void theIntroYearIsNeverFlaggedAsAStartProblem() {
+        // A range starting at the unit's own introduction year is natural, even if that year is not an era boundary.
+        NavigableSet<Integer> eras = new TreeSet<>(List.of(3050, 3055, 3060));
+        List<AvailabilityRow> rows = List.of(
+              new AvailabilityRow("FS", "Federated Suns", 2,
+                    megamek.common.units.ForceGeneratorAvailability.UNSPECIFIED_YEAR,
+                    megamek.common.units.ForceGeneratorAvailability.UNSPECIFIED_YEAR, false));
+
+        assertTrue(AvailabilityTab.eraAlignmentProblems(rows, 3052, eras).isEmpty());
     }
 
     @Test

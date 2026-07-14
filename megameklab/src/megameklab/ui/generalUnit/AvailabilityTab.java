@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.StringJoiner;
 
@@ -581,6 +582,11 @@ public class AvailabilityTab extends ITab {
                   + ". Those entries will never be used.");
         }
 
+        String eraAlignmentWarning = eraAlignmentWarning();
+        if (eraAlignmentWarning != null) {
+            warnings.add(eraAlignmentWarning);
+        }
+
         if (warnings.isEmpty()) {
             warningLabel.setText(" ");
             return;
@@ -589,6 +595,73 @@ public class AvailabilityTab extends ITab {
         StringJoiner text = new StringJoiner("<br>", "<html>", "</html>");
         warnings.forEach(text::add);
         warningLabel.setText(text.toString());
+    }
+
+    /**
+     * Warns when a year range does not line up with the game's eras. The Force Generator stores availability in fixed
+     * era buckets, so a change written inside a bucket is spread across it rather than taking effect exactly then. This
+     * is what let the QA report's Periphery ranges land in the wrong era; telling the player up front is how they avoid
+     * it.
+     *
+     * @return the warning, or {@code null} if every range lines up with an era
+     */
+    private String eraAlignmentWarning() {
+        RATGenerator ratGenerator = RATGenerator.getInstance();
+        if (!ratGenerator.isInitialized() || ratGenerator.getEraSet().isEmpty()) {
+            return null;
+        }
+
+        List<String> problems = eraAlignmentProblems(tableModel.getRows(), getEntity().getYear(),
+              ratGenerator.getEraSet());
+        if (problems.isEmpty()) {
+            return null;
+        }
+
+        return "The Force Generator works in eras, so a year inside an era is approximated to its edge rather than "
+              + "taking effect exactly: " + String.join("; ", problems) + ".";
+    }
+
+    /**
+     * Finds the year-range boundaries that fall inside an era rather than on its edge. A range should start on an era's
+     * first year and end on its last, or the change it describes is smeared across the era.
+     * <p>
+     * Pure so it can be tested without a loaded Force Generator.
+     * </p>
+     *
+     * @param rows      the table rows
+     * @param introYear the unit's introduction year, which is a natural start and never a problem
+     * @param eras      the era boundary years, each being an era's first year
+     *
+     * @return one message per misaligned boundary, in row order; empty if all line up
+     */
+    static List<String> eraAlignmentProblems(List<AvailabilityRow> rows, int introYear, NavigableSet<Integer> eras) {
+        List<String> problems = new ArrayList<>();
+
+        for (AvailabilityRow row : rows) {
+            int fromYear = row.fromYear();
+            if ((fromYear != ForceGeneratorAvailability.UNSPECIFIED_YEAR)
+                  && (fromYear != introYear)
+                  && !eras.contains(fromYear)) {
+                Integer eraStart = eras.floor(fromYear);
+                Integer nextEra = eras.higher(fromYear);
+                if ((eraStart != null) && (nextEra != null)) {
+                    problems.add(row.factionCode() + " starts at " + fromYear + ", inside the " + eraStart + "-"
+                          + (nextEra - 1) + " era (use " + eraStart + " or " + nextEra + ")");
+                }
+            }
+
+            int toYear = row.toYear();
+            if (toYear != ForceGeneratorAvailability.UNSPECIFIED_YEAR) {
+                Integer nextEra = eras.higher(toYear);
+                Integer eraStart = eras.floor(toYear);
+                if ((nextEra != null) && (eraStart != null) && ((toYear + 1) != nextEra)) {
+                    problems.add(row.factionCode() + " ends at " + toYear + ", inside the " + eraStart + "-"
+                          + (nextEra - 1) + " era (use " + (nextEra - 1) + ")");
+                }
+            }
+        }
+
+        return problems;
     }
 
     /**
