@@ -62,12 +62,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
 import megamek.client.ratgenerator.AvailabilityRating;
-import megamek.client.ratgenerator.ChassisRecord;
 import megamek.client.ratgenerator.FactionRecord;
 import megamek.client.ratgenerator.MissionRole;
 import megamek.client.ratgenerator.RATGenerator;
@@ -118,7 +118,7 @@ public class AvailabilityTab extends ITab {
     private final JTable factionTable = new JTable(tableModel);
 
     private final JLabel headerLabel = new JLabel();
-    private final JLabel warningLabel = new JLabel();
+    private final JTextArea warningArea = new JTextArea();
 
     private final JSlider availabilitySlider = new JSlider(MIN_AVAILABILITY, MAX_AVAILABILITY);
     private final JLabel availabilityWordLabel = new JLabel();
@@ -217,8 +217,15 @@ public class AvailabilityTab extends ITab {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 4, 8));
         headerPanel.add(headerLabel, BorderLayout.NORTH);
-        warningLabel.setForeground(Color.RED);
-        headerPanel.add(warningLabel, BorderLayout.CENTER);
+        // A text area, not a label, so a long warning wraps to the width instead of being clipped
+        warningArea.setEditable(false);
+        warningArea.setLineWrap(true);
+        warningArea.setWrapStyleWord(true);
+        warningArea.setOpaque(false);
+        warningArea.setForeground(Color.RED);
+        warningArea.setFont(headerLabel.getFont());
+        warningArea.setBorder(null);
+        headerPanel.add(warningArea, BorderLayout.CENTER);
         add(headerPanel, BorderLayout.NORTH);
 
         JPanel centrePanel = new JPanel();
@@ -341,6 +348,10 @@ public class AvailabilityTab extends ITab {
         JPanel comparablePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         comparablePanel.add(comparableLabel);
         editorPanel.add(comparablePanel);
+
+        // A year is not a quantity: show "3056", not the locale-grouped "3,056"
+        fromYearSpinner.setEditor(new JSpinner.NumberEditor(fromYearSpinner, "0"));
+        toYearSpinner.setEditor(new JSpinner.NumberEditor(toYearSpinner, "0"));
 
         JPanel yearPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         yearPanel.add(new JLabel("Years: from"));
@@ -638,13 +649,11 @@ public class AvailabilityTab extends ITab {
         }
 
         if (warnings.isEmpty()) {
-            warningLabel.setText(" ");
+            warningArea.setText("");
             return;
         }
 
-        StringJoiner text = new StringJoiner("<br>", "<html>", "</html>");
-        warnings.forEach(text::add);
-        warningLabel.setText(text.toString());
+        warningArea.setText(String.join("\n", warnings));
     }
 
     /**
@@ -730,13 +739,9 @@ public class AvailabilityTab extends ITab {
             return false;
         }
 
-        for (ChassisRecord chassisRecord : ratGenerator.getChassisList()) {
-            if (chassisRecord.getChassis().equalsIgnoreCase(getEntity().getChassis())) {
-                return true;
-            }
-        }
-
-        return false;
+        // Direct key lookup rather than scanning every chassis: O(1), and it never iterates a collection the Force
+        // Generator's loader thread might still be writing to.
+        return ratGenerator.getChassisRecord(chassisKeyOf(getEntity())) != null;
     }
 
     // --- Force Generator lookups --------------------------------------------------------------------------------
