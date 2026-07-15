@@ -249,7 +249,17 @@ public class AvailabilityTableModel extends AbstractTableModel {
             }
         }
 
-        return digits.isEmpty() ? 0 : Integer.parseInt(digits.toString());
+        if (digits.isEmpty()) {
+            return 0;
+        }
+
+        try {
+            return Integer.parseInt(digits.toString());
+        } catch (NumberFormatException exception) {
+            // Character.isDigit accepts non-ASCII digits, and a very long run of digits overflows an int. Either way
+            // the value cannot be read, so return 0 per the method contract rather than failing the whole load.
+            return 0;
+        }
     }
 
     /**

@@ -159,6 +159,37 @@ class AvailabilityTabTest {
     }
 
     @Test
+    void aRoleNoLongerInTheFileIsNotWrittenBack() {
+        // A non-fitting role that was selected then removed must be deselected on reload, or missionRolesText would
+        // write it back even though it is no longer shown.
+        Mek mek = buildMek();
+        mek.setMissionRoles("paratrooper");
+        AvailabilityTab tab = new AvailabilityTab(new StubEntitySource(mek));
+        assertTrue(tab.getMismatchedRoles().contains(MissionRole.PARATROOPER));
+
+        mek.setMissionRoles("");
+        tab.refresh();
+
+        assertFalse(tab.currentMissionRolesText().contains("paratrooper"),
+              "A hidden, no-longer-declared role must not leak back into the unit");
+    }
+
+    @Test
+    void aFromYearAtTheIntroYearStaysTheSentinel() {
+        // "Start at the intro year" is stored as UNSPECIFIED so it tracks the intro year. Leaving the spinner at the
+        // intro year must not freeze it to a concrete value.
+        int intro = 3049;
+        assertEquals(ForceGeneratorAvailability.UNSPECIFIED_YEAR,
+              AvailabilityTab.resolveFromYear(intro, ForceGeneratorAvailability.UNSPECIFIED_YEAR, intro));
+        // Moving the spinner off the intro year makes it a real, concrete start year
+        assertEquals(3055,
+              AvailabilityTab.resolveFromYear(3055, ForceGeneratorAvailability.UNSPECIFIED_YEAR, intro));
+        // A row that already had a concrete year keeps it, even when that year equals the intro year
+        assertEquals(intro,
+              AvailabilityTab.resolveFromYear(intro, intro, intro));
+    }
+
+    @Test
     void aRoleTheFileDeclaresIsShownEvenIfItDoesNotFit() {
         // Quietly dropping something out of somebody's file is not this tab's job. Show it, warn, let them decide.
         Mek mek = buildMek();

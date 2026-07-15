@@ -466,14 +466,42 @@ public class AvailabilityTab extends ITab {
 
         toYearSpinner.setEnabled(!neverStopsCheckBox.isSelected());
 
-        int fromYear = (int) fromYearSpinner.getValue();
+        AvailabilityRow currentRow = tableModel.getRow(selected);
+        int fromYear = resolveFromYear((int) fromYearSpinner.getValue(), currentRow.fromYear(), getEntity().getYear());
         int toYear = neverStopsCheckBox.isSelected()
               ? ForceGeneratorAvailability.UNSPECIFIED_YEAR
               : (int) toYearSpinner.getValue();
 
-        tableModel.setRow(selected, tableModel.getRow(selected).withYears(fromYear, toYear));
+        tableModel.setRow(selected, currentRow.withYears(fromYear, toYear));
         updateWarnings();
         writeBack();
+    }
+
+    /**
+     * Keeps "start at the unit's introduction year" stored as the sentinel rather than a concrete year, so it still
+     * tracks the intro year if that later changes on Basic Info. Editing the year controls must not freeze the
+     * sentinel just because the spinner happens to show the intro year.
+     *
+     * @param spinnerFromYear the value in the from-year spinner
+     * @param rowFromYear     the row's current start year, which may be the sentinel
+     * @param introYear       the unit's introduction year
+     *
+     * @return the start year to store
+     */
+    static int resolveFromYear(int spinnerFromYear, int rowFromYear, int introYear) {
+        boolean stillAtIntro = (rowFromYear == ForceGeneratorAvailability.UNSPECIFIED_YEAR)
+              && (spinnerFromYear == introYear);
+
+        return stillAtIntro ? ForceGeneratorAvailability.UNSPECIFIED_YEAR : spinnerFromYear;
+    }
+
+    /**
+     * The mission roles the tab would write to the unit, for tests to check a hidden checkbox does not leak in.
+     *
+     * @return the comma-separated role text
+     */
+    String currentMissionRolesText() {
+        return missionRolesText();
     }
 
     /**
@@ -533,12 +561,16 @@ public class AvailabilityTab extends ITab {
         for (MissionRole role : MissionRole.values()) {
             boolean isSelected = chosen.contains(role);
             boolean fits = role.fitsUnitType(unitType);
+
+            // Set every checkbox's state, even ones not shown. missionRolesText() reads them all, so a checkbox left
+            // selected from a previous refresh would otherwise be written back into the unit.
+            JCheckBox checkBox = roleCheckBoxes.get(role);
+            checkBox.setSelected(isSelected);
+
             if (!fits && !isSelected) {
                 continue;
             }
 
-            JCheckBox checkBox = roleCheckBoxes.get(role);
-            checkBox.setSelected(isSelected);
             rolesPanel.add(checkBox);
             offeredRoles.add(role);
 

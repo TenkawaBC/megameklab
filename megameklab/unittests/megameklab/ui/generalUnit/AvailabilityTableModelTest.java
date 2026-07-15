@@ -88,6 +88,15 @@ class AvailabilityTableModelTest {
     }
 
     @Test
+    void anUnreadableNumberDoesNotFailTheLoad() {
+        // A hand-edited value can overflow an int. Opening the file must not throw; the number reads as 0 instead.
+        model.loadFrom(List.of(ForceGeneratorAvailability.parse("FS:99999999999")), NAMER);
+
+        assertEquals(1, model.getRowCount());
+        assertEquals(0, model.getRow(0).availability());
+    }
+
+    @Test
     void roundTripsThroughTheFileFormat() {
         List<ForceGeneratorAvailability> original = List.of(
               ForceGeneratorAvailability.parse("FS:5,LA:3"),
