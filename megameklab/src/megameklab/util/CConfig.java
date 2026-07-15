@@ -89,6 +89,7 @@ public final class CConfig {
     public static final String MISC_APPLICATION_EXIT_PROMPT = "applicationExitPrompt";
     public static final String MISC_MUL_OPEN_BEHAVIOUR = "mulDndBehaviour";
     public static final String MISC_INCLUDE_LICENSE = "includeLicense";
+    public static final String MISC_SHOW_AVAILABILITY_TAB = "showAvailabilityTab";
 
     public static final String GUI_PLAF = "lookAndFeel";
     public static final String GUI_COLOR_WEAPONS = "Weapons";
@@ -186,6 +187,8 @@ public final class CConfig {
         defaults.setProperty(MISC_SKIP_SAFETY_PROMPTS, Boolean.toString(false));
         defaults.setProperty(MISC_APPLICATION_EXIT_PROMPT, Boolean.toString(true));
         defaults.setProperty(MISC_INCLUDE_LICENSE, Boolean.toString(false));
+        // Off by default: the Force Generator Availability tab is an advanced feature, opt-in from Options - General.
+        defaults.setProperty(MISC_SHOW_AVAILABILITY_TAB, Boolean.toString(false));
         defaults.setProperty(RS_PROGRESS_BAR, Boolean.toString(true));
         defaults.setProperty(RS_COLOR, RecordSheetOptions.ColorMode.LOGO_ONLY.name());
         defaults.setProperty(RS_HEAT_SCALE_MARKER, RecordSheetOptions.HeatScaleMarker.ASTERISK.name());
@@ -589,6 +592,10 @@ public final class CConfig {
 
     public static boolean includeLicense() {
         return CConfig.getBooleanParam(CConfig.MISC_INCLUDE_LICENSE);
+    }
+
+    public static boolean showAvailabilityTab() {
+        return CConfig.getBooleanParam(CConfig.MISC_SHOW_AVAILABILITY_TAB);
     }
 
     public static void resetWindowPositions() {

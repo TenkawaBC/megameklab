@@ -50,6 +50,7 @@ import megamek.common.weapons.infantry.InfantryWeapon;
 import megameklab.ui.MegaMekLabMainUI;
 import megameklab.ui.PopupMessages;
 import megameklab.ui.generalUnit.AvailabilityTab;
+import megameklab.util.CConfig;
 import megameklab.ui.generalUnit.FluffTab;
 import megameklab.ui.generalUnit.AnalysisTab;
 import megameklab.ui.generalUnit.PreviewTab;
@@ -99,7 +100,9 @@ public class CIMainUI extends MegaMekLabMainUI {
 
         configPane.addTab("Build", structureTab);
         configPane.addTab("Fluff", new TabScrollPane(fluffTab));
-        configPane.addTab("Availability", new TabScrollPane(availabilityTab, availabilityTab.refreshOnShow));
+        if (CConfig.showAvailabilityTab()) {
+            configPane.addTab("Availability", new TabScrollPane(availabilityTab, availabilityTab.refreshOnShow));
+        }
         configPane.addTab("Preview", previewTab);
         configPane.addTab("Analysis", analysisTab);
 

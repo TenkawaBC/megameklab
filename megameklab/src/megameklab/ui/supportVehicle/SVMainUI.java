@@ -54,6 +54,7 @@ import megameklab.ui.generalUnit.FluffTab;
 import megameklab.ui.generalUnit.AnalysisTab;
 import megameklab.ui.generalUnit.PreviewTab;
 import megameklab.ui.generalUnit.AvailabilityTab;
+import megameklab.util.CConfig;
 import megameklab.ui.generalUnit.QuirksTab;
 import megameklab.ui.generalUnit.TransportTab;
 import megameklab.ui.util.TabScrollPane;
@@ -126,7 +127,9 @@ public class SVMainUI extends MegaMekLabMainUI {
         configPane.addTab("Transport", new TabScrollPane(transportTab));
         configPane.addTab("Fluff", new TabScrollPane(fluffTab));
         configPane.addTab("Quirks", new TabScrollPane(quirksTab, quirksTab.refreshOnShow));
-        configPane.addTab("Availability", new TabScrollPane(availabilityTab, availabilityTab.refreshOnShow));
+        if (CConfig.showAvailabilityTab()) {
+            configPane.addTab("Availability", new TabScrollPane(availabilityTab, availabilityTab.refreshOnShow));
+        }
         configPane.addTab("Preview", previewTab);
         configPane.addTab("Analysis", analysisTab);
 
