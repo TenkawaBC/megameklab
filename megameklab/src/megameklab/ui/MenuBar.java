@@ -1703,8 +1703,8 @@ public class MenuBar extends JMenuBar implements ClipboardOwner {
     /**
      * Opens the composite tech level report for the given unit. The report is evaluated with the year, faction and
      * Variable Tech Level setting of the given tech manager; when no tech manager is available, as for a unit loaded
-     * from the cache or from a file, the unit's own introduction year is used together with the Variable Tech Level
-     * setting from the MegaMekLab configuration.
+     * from the cache or from a file, the unit's own introduction year and tech faction are used together with the
+     * Variable Tech Level setting from the MegaMekLab configuration.
      *
      * @param frame       The parent frame of the dialog
      * @param entity      The unit to report on; nothing happens when this is {@code null}
@@ -1720,7 +1720,9 @@ public class MenuBar extends JMenuBar implements ClipboardOwner {
               ? techManager.useVariableTechLevel()
               : CConfig.getBooleanParam(CConfig.TECH_PROGRESSION);
         int evaluationYear = (techManager != null) ? techManager.getGameYear() : entity.getYear();
-        Faction techFaction = (techManager != null) ? techManager.getTechFaction() : Faction.NONE;
+        // A unit opened from the cache or a file has no editor, so fall back to the faction it was designed
+        // with rather than no faction, which would drop faction-specific availability dates.
+        Faction techFaction = (techManager != null) ? techManager.getTechFaction() : entity.getTechFaction();
 
         new TechLevelDisplayDialog(frame, entity, techFaction, evaluationYear, useVariableTechLevel).setVisible(true);
     }
