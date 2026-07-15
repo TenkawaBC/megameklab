@@ -187,8 +187,9 @@ public final class CConfig {
         defaults.setProperty(MISC_SKIP_SAFETY_PROMPTS, Boolean.toString(false));
         defaults.setProperty(MISC_APPLICATION_EXIT_PROMPT, Boolean.toString(true));
         defaults.setProperty(MISC_INCLUDE_LICENSE, Boolean.toString(false));
-        // Off by default: the Force Generator Availability tab is an advanced feature, opt-in from Options - General.
-        defaults.setProperty(MISC_SHOW_AVAILABILITY_TAB, Boolean.toString(false));
+        // On by default so the Force Generator Availability tab is visible; it can be hidden from Options - General.
+        // The toggle is read when an editor is built, so a change takes effect on the next unit opened, not live.
+        defaults.setProperty(MISC_SHOW_AVAILABILITY_TAB, Boolean.toString(true));
         defaults.setProperty(RS_PROGRESS_BAR, Boolean.toString(true));
         defaults.setProperty(RS_COLOR, RecordSheetOptions.ColorMode.LOGO_ONLY.name());
         defaults.setProperty(RS_HEAT_SCALE_MARKER, RecordSheetOptions.HeatScaleMarker.ASTERISK.name());
