@@ -38,7 +38,6 @@ import java.awt.Dimension;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
