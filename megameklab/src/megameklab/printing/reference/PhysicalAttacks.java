@@ -36,6 +36,8 @@ import megamek.common.actions.ClubAttackAction;
 import megamek.common.equipment.MiscType;
 import megamek.common.equipment.Mounted;
 import megamek.common.equipment.enums.MiscTypeFlag;
+import megamek.common.rules.RulesManager;
+import megamek.common.rules.core.CoreRulesManager;
 import megamek.common.units.Entity;
 import megamek.common.units.Mek;
 import megamek.common.units.QuadMek;
@@ -107,11 +109,18 @@ public class PhysicalAttacks extends ReferenceTable {
         int right = countActuators(entity, Mek.LOC_RIGHT_ARM);
         int baseDamage = (int) Math.ceil(entity.getWeight() / 10.0);
         boolean hasTSM = entity.hasWorkingMisc(MiscType.F_TSM);
-        if (left == right) {
-            addPunchAttack(bundle.getString("punch"), left, baseDamage, hasTSM);
+        int leftShieldModifier = 0;
+        int rightShieldModifier = 0;
+        if (entity.hasShield()) {
+            RulesManager rulesManager = new CoreRulesManager();
+            leftShieldModifier = rulesManager.getRulesPhysical().getShieldDamageBoost(entity, Mek.LOC_LEFT_ARM);
+            rightShieldModifier = rulesManager.getRulesPhysical().getShieldDamageBoost(entity, Mek.LOC_LEFT_ARM);
+        }
+        if (left == right && !entity.hasShield()) {
+            addPunchAttack(bundle.getString("punch"), left, baseDamage, hasTSM, 0);
         } else {
-            addPunchAttack(bundle.getString("punch") + " (LA)", left, baseDamage, hasTSM);
-            addPunchAttack(bundle.getString("punch") + " (RA)", right, baseDamage, hasTSM);
+            addPunchAttack(bundle.getString("punch") + " (LA)", left, baseDamage, hasTSM, leftShieldModifier);
+            addPunchAttack(bundle.getString("punch") + " (RA)", right, baseDamage, hasTSM, rightShieldModifier);
         }
     }
 
@@ -127,7 +136,7 @@ public class PhysicalAttacks extends ReferenceTable {
         }
     }
 
-    private void addPunchAttack(String name, int actuators, int baseDamage, boolean hasTSM) {
+    private void addPunchAttack(String name, int actuators, int baseDamage, boolean hasTSM, int shieldModifier) {
         String modifier = "+3";
         if (actuators == 4) {
             modifier = "+0";
@@ -138,8 +147,13 @@ public class PhysicalAttacks extends ReferenceTable {
         } else if (actuators == 1) {
             baseDamage = Math.max(baseDamage / 4, 1);
         }
-        String tsmDamage = hasTSM ? " [" + baseDamage * 2 + "]" : "";
-        addRow(name, modifier, baseDamage + tsmDamage);
+        
+        String baseDamageString = String.valueOf(baseDamage);
+        String shieldDamage = (shieldModifier > 0) ? "+" + String.valueOf(shieldModifier) : "";
+        String tsmDamage = hasTSM ?
+              (shieldModifier > 0) ? " [" + baseDamage * 2 + "+" + shieldModifier * 2 + "]" : " [" + baseDamage * 2 + 
+              "]" : "";
+        addRow(name, modifier, baseDamageString + shieldDamage + tsmDamage);
     }
 
     private void addPhysicalWeapon(Entity entity) {
@@ -155,9 +169,7 @@ public class PhysicalAttacks extends ReferenceTable {
                     logger.error("Unknown hand weapon {}!", mounted.getName());
                     addRow(mounted.getName(), "???", StringUtils.getEquipmentInfo(entity, mounted));
                 }
-            } else if (mounted.getType().hasFlag(MiscType.F_SHIELD)) {
-                addRow(mounted.getName(), "", StringUtils.getEquipmentInfo(entity, mounted));
-            }
+            } 
         }
     }
 }
